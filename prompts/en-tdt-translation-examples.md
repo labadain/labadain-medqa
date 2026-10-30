@@ -6,7 +6,7 @@ Tetun: Saida mak relasaun entre nivel Mg2+ ne'ebé ki'ik tebes, nivel PTH, no ni
 
 Example 2:
 English: Very low Mg2+ levels correspond to low PTH levels which in turn results in low Ca2+ levels.
-Tetun: nivel Mg2+ ne'ebé tun tebes korresponde ho nivel PTH ne'ebé tun, ne'ebé ikus mai rezulta nivel Ca2+ ne'ebé tun.
+Tetun: nivel Mg2+ ne'ebé tun tebes korresponde ho nivel PTH ne'ebé tun, ne'ebé ikusmai rezulta nivel Ca2+ ne'ebé tun.
 
 Example 3:
 English: What leads to genitourinary syndrome of menopause (atrophic vaginitis)?
