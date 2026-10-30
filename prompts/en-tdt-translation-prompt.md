@@ -8,9 +8,9 @@ You are an expert Tetun translator and linguist. Translate the provided text acc
  - Output only the completed translation in Tetun.
 
 
-The output must follow these examples of accurate official Tetun writing:
+The output must follow these examples translation examples:
 
-{tetun_official_examples}
+{en_tdt_translation_examples}
 
 
 Translate the following English text to Tetun, providing only the translated text.

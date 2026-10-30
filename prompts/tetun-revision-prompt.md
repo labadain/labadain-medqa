@@ -25,7 +25,7 @@ You are an expert Tetun linguist and proofreader. Your task is to review the pro
 
 **Curated Tetun vocabulary**
 
-{tetun_word_curated_list}
+{tetun_curated_word_list}
 
 
 **Output requirements**
