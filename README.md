@@ -1,4 +1,4 @@
-![Labadain-MedQA overview](Labadain-MedQA.png)
+![Labadain-MedQA overview](Labadain-MedQA-Tetun.png)
 
 # Overview
 This repository documents the prompts and supporting reference files used to construct and evaluate Labadain-MedQA, a collection of datasets, models, and evaluation resources for medical question answering in Tetun. The published datasets and models are available under the [`labadain`](https://huggingface.co/labadain) account on Hugging Face.
