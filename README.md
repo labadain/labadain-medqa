@@ -1,6 +1,6 @@
 ![Labadain-MedQA overview](Labadain-MedQA-Tetun.png)
 
-# Labadain-MedQA
+# Overview
 
 Labadain-MedQA is a collection of datasets, models, and evaluation resources for medical question answering (QA) in Tetun, a low-resource language spoken in Timor-Leste. It comprises English–Tetun medical QA datasets, QLoRA fine-tuned language models, translation-quality evaluation resources, and translated USMLE evaluation sets.
 
@@ -13,7 +13,7 @@ The resources support:
 
 This repository provides the prompts and supporting reference files used in the construction and evaluation of Labadain-MedQA. The published datasets and models are available under the [`labadain` account on Hugging Face](https://huggingface.co/labadain).
 
-## Resource Overview
+# Resource Description
 
 | Resource | Contents |
 | --- | --- |
@@ -24,16 +24,16 @@ This repository provides the prompts and supporting reference files used in the 
 | Translation, construction, and evaluation materials | Reusable translation pipeline; and translation, orthographic rules, vocabulary references, and evaluation prompts |
 
 
-## Datasets
+# Datasets
 
-### Medical QA Training Data
+## Medical QA Training Data
 
 The translated MedAlpaca datasets contain 39,077 English–Tetun medical QA pairs, of which only the Tetun questions and answers were used for model fine-tuning.
 
 - [Medical Flashcards](https://huggingface.co/datasets/labadain/Labadain-MedQA-MedAlpaca-Medical-Flashcards-English-Tetun): 33,135 QA pairs covering biomedical and clinical knowledge.
 - [WikiDoc Patient Information](https://huggingface.co/datasets/labadain/Labadain-MedQA-MedAlpaca-WikiDoc-Patient-Information-English-Tetun): 5,942 QA pairs covering medical conditions, symptoms, treatments, and patient information.
 
-#### Data Structure
+## Data Structure
 
 Each QA pair contains four fields:
 
@@ -46,18 +46,18 @@ Each QA pair contains four fields:
 
 The Tetun fields support instruction fine-tuning, while the parallel English–Tetun data are intended to support future research on cross-lingual medical QA and translation.
 
-Example record:
+Example record (Medical Flashcards and WikiDoc Patient Information):
 
 ```json
 {
-    "input": "When to seek urgent medical care if I have Allergy ?",
-    "input_tdt": "Bainhira mak ha'u tenke buka kuidadu médiku urjente karik ha'u iha alerjia?",
-    "output": "Call for an appointment with your health care provider if:\nSevere symptoms of allergy occur. Treatment for allergies no longer works.",
-    "output_tdt": "Halo xamada ba ita-nia profisionál saúde hodi marka konsulta karik:\nSintoma alerjia grave mosu.\n- Tratamentu ba alerjia la funsiona ona.."
-  }
+  "input_en": "What is the relationship between very low Mg2+ levels, PTH levels, and Ca2+ levels?",
+  "input_tdt": "Saida mak relasaun entre nível Mg2+ ne'ebé ki'ik tebes, nível PTH, no nível Ca2+?",
+  "output_en": "Very low Mg2+ levels correspond to low PTH levels which in turn results in low Ca2+ levels.",
+  "output_tdt": "Nível Mg2+ ne'ebé tun tebes korresponde ho nível PTH ne'ebé tun, ne'ebé ikus mai rezulta nível Ca2+ ne'ebé tun."
+}
 ```
 
-#### Loading the Datasets
+## Loading the Datasets
 
 The datasets can be loaded using the Hugging Face `datasets` library:
 
@@ -88,7 +88,7 @@ print(wikidoc[0])
 
 The Tetun question and answer fields were used to construct instruction–response examples for model fine-tuning. The training format depends on the selected model and its chat template.
 
-## Evaluation Resources
+# Evaluation Resources
 
 The evaluation resources support translation quality assessment and downstream model evaluation.
 
@@ -99,9 +99,56 @@ Translation quality was evaluated on 100 randomly selected medical QA documents 
 - [Translation Evaluation Sample](https://huggingface.co/datasets/labadain/Labadain-MedQA-Sample-for-Evaluation-English-Tetun): Contains English originals, human reference translations, and LLM-generated translations for 100 medical QA documents.
 - [Human Translation Assessment Scores](https://huggingface.co/datasets/labadain/Labadain-MedQA-Human-Assessment-Scores-English-Tetun): Contains human evaluation scores for medical accuracy and Tetun fluency.
 
-The translation sample supports automatic metric computation against human references. The human assessment scores support analysis of medical accuracy, Tetun fluency, and inter-annotator agreement.
+Example record from the **Translation Evaluation Sample**:
 
-### Downstream Model Evaluation
+```json
+{
+  "english_text": "What is the association between mycophenolate mofetil use and blood pressure?",
+  "translation_human": "Saida mak relasaun entre uzu mikofenolatu mofetila no tensaun arteriál (raan)?",
+  "translation_llm": "Saida mak asosiasaun entre uza mikofenolatu mofetil no presaun raan?"
+}
+```
+
+Example record from the **Human Translation Assessment Scores** dataset:
+
+```json
+{
+  "TQ001": {
+    "english_text": "What is the association between mycophenolate mofetil use and blood pressure?",
+    "translation_a": "Saida mak relasaun entre uzu mikofenolatu mofetila no tensaun arteriál (raan)?",
+    "translation_b": "Saida mak asosiasaun entre uza mikofenolatu mofetil no presaun raan?",
+    "ratings": {
+      "a1_a_medical_accuracy": 4,
+      "a1_a_tetun_fluency": 4,
+      "a1_b_medical_accuracy": 4,
+      "a1_b_tetun_fluency": 4,
+      "a2_a_medical_accuracy": 5,
+      "a2_a_tetun_fluency": 5,
+      "a2_b_medical_accuracy": 5,
+      "a2_b_tetun_fluency": 5
+    }
+  }
+}
+```
+
+The human-assessment rating fields use the pattern
+`<annotator>_<system>_<criterion>`:
+
+| Component | Meaning |
+| --- | --- |
+| `a1` or `a2` | Annotator 1 or annotator 2 |
+| `a` or `b` | Translation system A or translation system B |
+| `medical_accuracy` | Score for medical accuracy |
+| `tetun_fluency` | Score for Tetun fluency |
+
+System A is the human translation, and system B is the LLM-generated translation. For example, `a1_a_medical_accuracy` is annotator 1's medical-accuracy score for the human translation, while `a1_a_tetun_fluency` is annotator 1's Tetun-fluency score for the human translation. Fields with `_b_` refer to the LLM-generated translation; the `a2_` fields contain the corresponding scores from annotator 2.
+
+The human assessment was conducted using the annotation system shown below.
+
+![Translation quality annotation system](annotation-tools-and-guidelines/translation_quality_assessment.png)
+
+
+### Evaluation on Medical QA Datasets
 
 Three English–Tetun USMLE datasets provide 325 multiple-choice questions for evaluating language models on medical knowledge and reasoning tasks in Tetun.
 
@@ -113,6 +160,30 @@ Three English–Tetun USMLE datasets provide 325 multiple-choice questions for e
 | **Total** | **325** | |
 
 Each dataset contains English and Tetun questions, answer options, and corresponding correct answers.
+
+Each USMLE dataset uses the same record structure. The following abbreviated example applies to the records in Step 1, Step 2, and Step 3:
+
+```json
+{
+  "question": "Serum LDL-cholesterol concentrations are measured in blood samples...",
+  "question_tdt": "Konsentrasaun LDL-kolesterol iha serum sukat husi amostra raan...",
+  "options": {
+    "A": "105-155",
+    "B": "120-140",
+    "C": "125-135",
+    "D": "128-132",
+    "E": "129-131"
+  },
+  "options_tdt": [
+    "{'A': '105-155', 'B': '120-140', 'C': '125-135', 'D': '128-132', 'E': '129-131'}"
+  ],
+  "answer": "120-140",
+  "answer_tdt": "120-140",
+  "answer_idx": "B"
+}
+```
+
+The same fields are provided in the [USMLE Step 1](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-1-English-Tetun), [USMLE Step 2](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-2-English-Tetun), and [USMLE Step 3](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-3-English-Tetun) datasets.
 
 The datasets support accuracy-based evaluation using a multiple-choice prompt that instructs models to select one answer option. The evaluation prompt is available in the [Prompts and Reference Files](#prompts-and-reference-files) section.
 
@@ -148,6 +219,52 @@ The reported results correspond to the QLoRA evaluation configurations documente
 Each model card provides additional information about its base checkpoint, fine-tuning approach, evaluation results, and model-loading instructions.
 
 See all [Labadain-MedQA models](https://huggingface.co/labadain/models?search=MedQA).
+
+### Model Usage
+
+The following example shows how to load and use the Gemma 4 E2B adapter. The LLaMA 3 adapters use similar settings: 4-bit loading, text-only generation, the same user-prompt format, and deterministic decoding (`do_sample=False`). Only the compatible base model and adapter identifiers change.
+
+Install the inference dependencies:
+
+```bash
+pip install unsloth peft transformers torch bitsandbytes
+```
+
+```python
+from peft import PeftModel
+from unsloth import FastModel
+import torch
+
+base_model, tokenizer = FastModel.from_pretrained(
+    model_name="unsloth/gemma-4-E2B-it",
+    max_seq_length=2048,
+    load_in_4bit=True,
+)
+
+model = PeftModel.from_pretrained(
+    base_model,
+    "labadain/Labadain-MedQA-QLoRA-Gemma-4-E2B-it-Tetun",
+)
+model.eval()
+
+messages = [{"role": "user", "content": "Saida mak diabetes?"}]
+inputs = tokenizer.apply_chat_template(
+    messages,
+    tokenize=True,
+    add_generation_prompt=True,
+    return_tensors="pt",
+    return_dict=True,
+).to(model.device)
+
+with torch.inference_mode():
+    output = model.generate(
+        **inputs,
+        do_sample=False,
+        max_new_tokens=256,
+    )
+
+print(tokenizer.decode(output[0], skip_special_tokens=True))
+```
 
 
 ## Resource Construction
