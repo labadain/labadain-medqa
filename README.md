@@ -21,80 +21,8 @@ This repository provides the prompts and supporting reference files used in the 
 | Fine-tuned models | Six QLoRA/PEFT adapters from the Gemma 4 and Llama 3 families |
 | Translation evaluation | 100 medical QA documents and human assessment scores |
 | Downstream evaluation | 325 translated USMLE multiple-choice questions across three collections |
-| Construction and evaluation materials | Translation prompts, orthographic rules, vocabulary references, and evaluation prompts |
+| Translation, construction, and evaluation materials | Reusable translation pipeline; and translation, orthographic rules, vocabulary references, and evaluation prompts |
 
-## Resource Construction
-
-The medical QA training datasets were derived from the MedAlpaca Medical Flashcards and WikiDoc Patient Information collections. The English source content was translated into Tetun using Gemini 2.5 Flash through a two-stage process:
-
-1. **English-to-Tetun translation:** Medical QA content was translated using a prompt containing English–Tetun examples.
-2. **Tetun orthographic revision:** The translated text was revised using a separate prompt guided by official Instituto Nacional de Linguística (INL) orthography, Portuguese-to-Tetun spelling adaptation rules, and curated vocabulary.
-
-Both prompts were iteratively refined during development. The final prompts and supporting reference files are available in the [Prompts and Reference Files](#prompts-and-reference-files) section.
-
-Translation quality was evaluated using human reference translations, automatic translation metrics, and assessments by two native Tetun-speaking healthcare professionals.
-
-## Translation Pipeline
-
-The reusable translation pipeline is provided in [`translation_pipeline/`](translation_pipeline/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
-
-### Translation folder
-
-```text
-translation_pipeline/
-├── prompts/
-│   ├── en-tdt-translation-prompt.md
-│   └── tetun-revision-prompt.md
-├── src/
-│   └── utils.py
-├── .env.example
-├── requirements.txt
-└── translate.py
-```
-
-The `src/` directory contains the runtime support modules imported by `translate.py`. It must remain alongside `translate.py` when the pipeline is copied or published.
-
-### Setup
-
-Run the following commands from the `translation_pipeline/` directory:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-```
-
-Set `GEMINI_API_KEY` in `.env` before running the pipeline. The key is used to call Gemini for both English-to-Tetun translation and Tetun orthographic revision.
-
-### Running translation
-
-The dataset name is required. The range uses Python's half-open convention: `--init-range` is inclusive and `--end-range` is exclusive.
-
-```bash
-python translate.py \
-  --dataset-name medalpaca/medical_meadow_wikidoc_patient_information \
-  --init-range 0 \
-  --end-range 10 \
-  --output-dir translated_docs \
-  --output-filename translated_docs.json
-```
-
-The first run downloads the Hugging Face dataset and stores it under `translation_pipeline/HF_dataset_to_translate/`. Later runs reuse the local dataset copy instead of downloading it again.
-
-The output JSON contains the original English fields and the revised Tetun fields: `input`, `input_tdt`, `output`, and `output_tdt`. The translation and revision steps are completed before a record is written.
-
-When LangSmith tracing is enabled, each input or output field appears under a `translation_revision` trace. It contains two child traces: `translation_result` and `revision_result`. Each child trace contains the complete constructed prompt and generated response under the record-level parent trace.
-
-### Checkpoints and resuming
-
-After each dataset row, the pipeline writes the translated output and updates a checkpoint file at:
-
-```text
-translated_docs/translated_docs_checkpoint.json
-```
-
-The checkpoint stores the dataset configuration and the next source index. If a translation request fails, rerun the same command to resume from the recorded index. The existing output JSON supplies the records already completed.
 
 ## Datasets
 
@@ -117,6 +45,17 @@ Each QA pair contains four fields:
 | `output_tdt` | Answer in Tetun |
 
 The Tetun fields support instruction fine-tuning, while the parallel English–Tetun data are intended to support future research on cross-lingual medical QA and translation.
+
+Example record:
+
+```json
+{
+    "input": "When to seek urgent medical care if I have Allergy ?",
+    "input_tdt": "Bainhira mak ha'u tenke buka kuidadu médiku urjente karik ha'u iha alerjia?",
+    "output": "Call for an appointment with your health care provider if:\nSevere symptoms of allergy occur. Treatment for allergies no longer works.",
+    "output_tdt": "Halo xamada ba ita-nia profisionál saúde hodi marka konsulta karik:\nSintoma alerjia grave mosu.\n- Tratamentu ba alerjia la funsiona ona.."
+  }
+```
 
 #### Loading the Datasets
 
@@ -181,6 +120,7 @@ These datasets are intended for evaluation rather than model fine-tuning, regard
 
 See all [Labadain-MedQA datasets](https://huggingface.co/labadain/datasets?search=MedQA).
 
+
 ## Models
 
 Six instruction-tuned models from the Gemma 4 and Llama 3 families were adapted for Tetun medical QA using QLoRA on the translated MedAlpaca training datasets.
@@ -208,6 +148,82 @@ The reported results correspond to the QLoRA evaluation configurations documente
 Each model card provides additional information about its base checkpoint, fine-tuning approach, evaluation results, and model-loading instructions.
 
 See all [Labadain-MedQA models](https://huggingface.co/labadain/models?search=MedQA).
+
+
+## Resource Construction
+
+The medical QA training datasets were derived from the MedAlpaca Medical Flashcards and WikiDoc Patient Information collections. The English source content was translated into Tetun using Gemini 2.5 Flash through a two-stage process:
+
+1. **English-to-Tetun translation:** Medical QA content was translated using a prompt containing English–Tetun examples.
+2. **Tetun orthographic revision:** The translated text was revised using a separate prompt guided by official Instituto Nacional de Linguística (INL) orthography, Portuguese-to-Tetun spelling adaptation rules, and curated vocabulary.
+
+Both prompts were iteratively refined during development. The final prompts and supporting reference files are available in the [Prompts and Reference Files](#prompts-and-reference-files) section.
+
+Translation quality was evaluated using human reference translations, automatic translation metrics, and assessments by two native Tetun-speaking healthcare professionals.
+
+
+## Translation Pipeline
+
+The reusable translation pipeline is provided in [`translation_pipeline/`](translation_pipeline/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
+
+### Translation folder
+
+```text
+translation_pipeline/
+├── prompts/
+│   ├── en-tdt-translation-prompt.md
+│   └── tetun-revision-prompt.md
+├── src/
+│   └── utils.py
+├── .env.example
+├── requirements.txt
+└── translate.py
+```
+
+The `src/` directory contains the runtime support modules imported by `translate.py`. It must remain alongside `translate.py` when the pipeline is copied or published.
+
+### Setup
+
+Run the following commands from the `translation_pipeline/` directory:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Set `GEMINI_API_KEY` in `.env` before running the pipeline. The key is used to call Gemini for both English-to-Tetun translation and Tetun orthographic revision.
+
+### Running translation
+
+The dataset name is required. The range uses Python's half-open convention: `--init-range` is inclusive and `--end-range` is exclusive.
+
+```bash
+python translate.py \
+  --dataset-name medalpaca/medical_meadow_wikidoc_patient_information \
+  --init-range 0 \
+  --end-range 10 \
+  --output-dir translated_docs \
+  --output-filename translated_docs.json
+```
+
+The first run downloads the Hugging Face dataset and stores it under `translation_pipeline/HF_dataset_to_translate/`. Later runs reuse the local dataset copy instead of downloading it again.
+
+The output JSON contains the original English fields and the revised Tetun fields: `input`, `input_tdt`, `output`, and `output_tdt`. The translation and revision steps are completed before a record is written.
+
+When LangSmith tracing is enabled, each input or output field appears under a `translation_revision` trace. It contains two child traces: `translation_result` and `revision_result`. Each child trace contains the complete constructed prompt and generated response under the record-level parent trace.
+
+### Checkpoints and resuming
+
+After each dataset row, the pipeline writes the translated output and updates a checkpoint file at:
+
+```text
+translated_docs/translated_docs_checkpoint.json
+```
+
+The checkpoint stores the dataset configuration and the next source index. If a translation request fails, rerun the same command to resume from the recorded index. The existing output JSON supplies the records already completed.
+
 
 ## Prompts and Reference Files
 
