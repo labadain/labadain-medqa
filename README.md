@@ -34,6 +34,68 @@ Both prompts were iteratively refined during development. The final prompts and 
 
 Translation quality was evaluated using human reference translations, automatic translation metrics, and assessments by two native Tetun-speaking healthcare professionals.
 
+## Translation Pipeline
+
+The reusable translation pipeline is provided in [`translation/`](translation/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
+
+### Translation folder
+
+```text
+translation/
+├── prompts/
+│   ├── en-tdt-translation-prompt.md
+│   └── tetun-revision-prompt.md
+├── src/
+│   └── utils.py
+├── .env.example
+├── requirements.txt
+└── translate.py
+```
+
+The `src/` directory contains the runtime support modules imported by `translate.py`. It must remain alongside `translate.py` when the pipeline is copied or published.
+
+### Setup
+
+Run the following commands from the `translation/` directory:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Set `GEMINI_API_KEY` in `.env` before running the pipeline. The key is used to call Gemini for both English-to-Tetun translation and Tetun orthographic revision.
+
+### Running translation
+
+The dataset name is required. The range uses Python's half-open convention: `--init-range` is inclusive and `--end-range` is exclusive.
+
+```bash
+python translate.py \
+  --dataset-name medalpaca/medical_meadow_wikidoc_patient_information \
+  --init-range 0 \
+  --end-range 10 \
+  --output-dir translated_docs \
+  --output-filename translated_docs.json
+```
+
+The first run downloads the Hugging Face dataset and stores it under `translation/HF_dataset_to_translate/`. Later runs reuse the local dataset copy instead of downloading it again.
+
+The output JSON contains the original English fields and the revised Tetun fields: `input`, `input_tdt`, `output`, and `output_tdt`. The translation and revision steps are completed before a record is written.
+
+When LangSmith tracing is enabled, each input or output field appears under a `translation_revision` trace. It contains two child traces: `translation_result` and `revision_result`. Each child trace contains the complete constructed prompt and generated response under the record-level parent trace.
+
+### Checkpoints and resuming
+
+After each dataset row, the pipeline writes the translated output and updates a checkpoint file at:
+
+```text
+translated_docs/translated_docs_checkpoint.json
+```
+
+The checkpoint stores the dataset configuration and the next source index. If a translation request fails, rerun the same command to resume from the recorded index. The existing output JSON supplies the records already completed.
+
 ## Datasets
 
 ### Medical QA Training Data
@@ -153,15 +215,14 @@ The following prompts and supporting reference files document the resource const
 
 ### Translation and Orthographic Revision
 
-- [English-to-Tetun translation prompt](prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
-- [English-to-Tetun translation examples](prompts/en-tdt-translation-examples.md): Reference examples used to guide English-to-Tetun translation.
-- [Tetun orthographic revision prompt](prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and curated vocabulary.
-- [Tetun orthographic rules](prompts/pt-loanwords-to-tetun-rules.md): Reference guidelines for Tetun spelling, accented vowels, hyphenation, loanword adaptation, and word-final stress.
-- [Curated Tetun word list](prompts/tetun-curated-word-list.md): Multilingual vocabulary mappings from English, Indonesian, and Portuguese to preferred Tetun equivalents.
+- [English-to-Tetun translation prompt](translation/prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
+- [Tetun orthographic revision prompt](translation/prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and curated vocabulary.
 
-### Model Evaluation
+### Evaluation
 
-- [Multiple-choice question evaluation prompt](prompts/multiple-selection-prompt.md): Instructions for selecting the most appropriate answer to a medical multiple-choice question and returning one option label.
+Evaluation-specific prompts and resources are organized in [`evaluation/`](evaluation/).
+
+- [Multiple-choice question evaluation prompt](evaluation/prompts/multiple-selection-prompt.md): Instructions for selecting the most appropriate answer to a medical multiple-choice question and returning one option label.
 
 Additional [annotation tools and guidelines](annotation-tools-and-guidelines/) are provided in this repository.
 
