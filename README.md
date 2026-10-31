@@ -11,7 +11,7 @@ The resources support:
 - Evaluating model performance on translated medical multiple-choice questions.
 - Research on cross-lingual medical knowledge transfer and information access in Tetun.
 
-This repository provides the prompts and supporting reference files used in the construction and evaluation of Labadain-MedQA. The published datasets and models are available under the [`labadain` account on Hugging Face](https://huggingface.co/labadain).
+This repository provides the translation pipeline, evaluation code, prompts, and supporting reference files used in the construction and evaluation of Labadain-MedQA. The published datasets and models are available under the [`labadain` account on Hugging Face](https://huggingface.co/labadain).
 
 # Resource Description
 
@@ -21,7 +21,7 @@ This repository provides the prompts and supporting reference files used in the 
 | Fine-tuned models | Six QLoRA/PEFT adapters from the Gemma 4 and Llama 3 families |
 | Translation evaluation | 100 medical QA documents and human assessment scores |
 | Downstream evaluation | 325 translated USMLE multiple-choice questions across three collections |
-| Translation, construction, and evaluation materials | Reusable translation pipeline; and translation, orthographic rules, vocabulary references, and evaluation prompts |
+| Translation, construction, and evaluation materials | Reusable translation pipeline, translation and orthographic revision prompts, orthographic rules, vocabulary references, and evaluation prompts |
 
 
 # Datasets
@@ -88,11 +88,13 @@ print(wikidoc[0])
 
 The Tetun question and answer fields were used to construct instruction–response examples for model fine-tuning. The training format depends on the selected model and its chat template.
 
-# Evaluation Resources
 
-The evaluation resources support translation quality assessment and downstream model evaluation.
+# Evaluation
 
-### Translation Quality Evaluation
+*Labadain-MedQA* provides resources for evaluating English-to-Tetun medical translation quality and language model performance on Tetun medical QA tasks. The evaluation resources include human reference translations, translation assessment scores, translated USMLE multiple-choice questions, and an evaluation notebook.
+
+## Translation Quality Evaluation
+
 
 Translation quality was evaluated on 100 randomly selected medical QA documents (50 question-answer pairs), using human reference translations and assessments by two native Tetun-speaking healthcare professionals.
 
@@ -148,7 +150,7 @@ The human assessment was conducted using the annotation system shown below.
 ![Translation quality annotation system](translation_quality_assessment_tool.png)
 
 
-### Evaluation on Medical QA Datasets
+## Evaluation on Medical QA Datasets
 
 Three English–Tetun USMLE datasets provide 325 multiple-choice questions for evaluating language models on medical knowledge and reasoning tasks in Tetun.
 
@@ -183,11 +185,13 @@ Each USMLE dataset uses the same record structure. The following abbreviated exa
 }
 ```
 
+In the published datasets, `options_tdt` is stored as a single-element list containing a string representation of the translated answer options.
+
 The same fields are provided in the [USMLE Step 1](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-1-English-Tetun), [USMLE Step 2](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-2-English-Tetun), and [USMLE Step 3](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-3-English-Tetun) datasets.
 
 These datasets are intended for evaluation rather than model fine-tuning, regardless of the split names used by the Hugging Face dataset viewer.
 
-The reproducible Gemma evaluation workflow is available in [`evaluation/evaluate.ipynb`](evaluation/evaluate.ipynb). It uses the practical Gemma 4 E2B configuration:
+The Gemma evaluation notebook is available in [`evaluation/evaluate.ipynb`](evaluation/evaluate.ipynb). It uses the practical Gemma 4 E2B configuration:
 
 ```text
 BASE_MODEL = unsloth/gemma-4-E2B-it
@@ -197,18 +201,20 @@ CONFIG = base_4bit
 DATASET_PATH = datasets/usmle-self-assessment-tetun/usmle_step_2_tetun.json
 ```
 
-The notebook supports `base_bf16`, `base_4bit`, `qlora_bf16`, and `qlora_4bit` configurations, applies deterministic multiple-choice generation (`do_sample=False`), and reports accuracy and invalid-response rate. Update `CONFIG` and `DATASET_PATH` to evaluate another local model configuration or USMLE split.
+The notebook expects a locally prepared Tetun evaluation file with the fields `question`, `options`, and `answer_idx`. When using the published English–Tetun USMLE datasets, the Tetun question and answer options must first be mapped from `question_tdt` and `options_tdt` to the format expected by the notebook.
+
+The notebook supports `base_bf16`, `base_4bit`, `qlora_bf16`, and `qlora_4bit` configurations, applies deterministic multiple-choice generation (`do_sample=False`), and reports accuracy and invalid-response rate. The default `base_4bit` configuration evaluates the base model without an adapter. Use `qlora_4bit` to evaluate the fine-tuned adapter. Update `DATASET_PATH` to select another locally prepared USMLE evaluation set.
 
 See all [Labadain-MedQA datasets](https://huggingface.co/labadain/datasets?search=MedQA).
 
 
-## Models
+# Models
 
 Six instruction-tuned models from the Gemma 4 and Llama 3 families were adapted for Tetun medical QA using QLoRA on the translated MedAlpaca training datasets.
 
 The published models are **PEFT adapters**, not standalone copies of the base models. Each adapter must be loaded with its compatible base model, as documented in the respective Hugging Face model card.
 
-### Gemma 4
+## Gemma 4
 
 | Model | USMLE Macro-Average Accuracy |
 | --- | ---: |
@@ -216,7 +222,7 @@ The published models are **PEFT adapters**, not standalone copies of the base mo
 | [Gemma 4 E4B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-E4B-it-Tetun) | 45.95% |
 | [Gemma 4 E2B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-E2B-it-Tetun) | 26.25% |
 
-### Llama 3
+## Llama 3
 
 | Model | USMLE Macro-Average Accuracy |
 | --- | ---: |
@@ -230,9 +236,33 @@ Each model card provides additional information about its base checkpoint, fine-
 
 See all [Labadain-MedQA models](https://huggingface.co/labadain/models?search=MedQA).
 
-### Model Usage
+## Model Fine-Tuning
 
-The following example shows how to load and use the Gemma 4 E2B adapter. The LLaMA 3 adapters use similar settings: 4-bit loading, text-only generation, the same user-prompt format, and deterministic decoding (`do_sample=False`). Only the compatible base model and adapter identifiers change.
+The adapters were trained using [Unsloth](https://github.com/unslothai/unsloth), Hugging Face PEFT/QLoRA, and the TRL `SFTTrainer` on the translated MedAlpaca datasets. The training pipeline converts the Tetun records into instruction–response pairs, injects LoRA adapters into the target modules, and retains the checkpoint with the lowest validation loss.
+
+The Gemma 4 E2B training notebook uses the following baseline configuration:
+
+| Setting | Value |
+| --- | --- |
+| LoRA rank (`r`) | 16 |
+| LoRA alpha | 16 |
+| LoRA dropout | 0.0 |
+| Trainable modules | Language, attention, and MLP modules |
+| Sequence length | 1,024 tokens |
+| Per-device training batch size | 8 |
+| Gradient accumulation steps | 4 |
+| Effective batch size | 32 |
+| Epochs | 3 |
+| Learning rate | `2e-5` |
+| Optimizer | `adamw_8bit` |
+| Evaluation and checkpoint interval | Every 250 steps |
+| Best-checkpoint metric | Minimal validation loss |
+
+The training approach follows the official [Unsloth Gemma 4 E2B text fine-tuning notebook](<https://github.com/unslothai/notebooks/blob/main/nb/Gemma4_(E2B)-Text.ipynb>). Batch sizes and gradient accumulation were adjusted for the available GPU memory and model size.
+
+## Model Usage
+
+The following example shows how to load and use the Gemma 4 E2B adapter. The LLaMA 3 adapters use similar settings: 4-bit loading, text-only generation, the same user-prompt format, and deterministic decoding (`do_sample=False`). The model-loading class, base model, and adapter identifiers should be adjusted for each model.
 
 Install the inference dependencies:
 
@@ -273,11 +303,12 @@ with torch.inference_mode():
         max_new_tokens=256,
     )
 
-print(tokenizer.decode(output[0], skip_special_tokens=True))
+new_tokens = output[0, inputs["input_ids"].shape[-1]:]
+print(tokenizer.decode(new_tokens, skip_special_tokens=True))
 ```
 
 
-## Resource Construction
+# Resource Construction
 
 The medical QA training datasets were derived from the MedAlpaca Medical Flashcards and WikiDoc Patient Information collections. The English source content was translated into Tetun using Gemini 2.5 Flash through a two-stage process:
 
@@ -289,11 +320,11 @@ Both prompts were iteratively refined during development. The final prompts and 
 Translation quality was evaluated using human reference translations, automatic translation metrics, and assessments by two native Tetun-speaking healthcare professionals.
 
 
-## Translation Pipeline
+# Translation Pipeline
 
 The reusable translation pipeline is provided in [`translation_pipeline/`](translation_pipeline/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
 
-### Translation folder
+## Translation folder
 
 ```text
 translation_pipeline/
@@ -309,7 +340,7 @@ translation_pipeline/
 
 The `src/` directory contains the runtime support modules imported by `translate.py`. It must remain alongside `translate.py` when the pipeline is copied or published.
 
-### Setup
+## Setup
 
 Run the following commands from the `translation_pipeline/` directory:
 
@@ -320,9 +351,9 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Set `GEMINI_API_KEY` in `.env` before running the pipeline. The key is used to call Gemini for both English-to-Tetun translation and Tetun orthographic revision.
+Set `GEMINI_API_KEY` in `.env` before running the pipeline. The key is used to call Gemini for both English-to-Tetun translation and Tetun orthographic revision. To enable LangSmith tracing, configure the corresponding LangSmith environment variables in `.env`. Otherwise, set `LANGSMITH_TRACING=false`.
 
-### Running translation
+## Running translation
 
 The dataset name is required. The range uses Python's half-open convention: `--init-range` is inclusive and `--end-range` is exclusive.
 
@@ -341,7 +372,7 @@ The output JSON contains the original English fields and the revised Tetun field
 
 When LangSmith tracing is enabled, each input or output field appears under a `translation_revision` trace. It contains two child traces: `translation_result` and `revision_result`. Each child trace contains the complete constructed prompt and generated response under the record-level parent trace.
 
-### Checkpoints and resuming
+## Checkpoints and resuming
 
 After each dataset row, the pipeline writes the translated output and updates a checkpoint file at:
 
@@ -352,24 +383,17 @@ translated_docs/translated_docs_checkpoint.json
 The checkpoint stores the dataset configuration and the next source index. If a translation request fails, rerun the same command to resume from the recorded index. The existing output JSON supplies the records already completed.
 
 
-## Prompts and Reference Files
+# Prompts and Reference Files
 
 The following prompts and supporting reference files document the resource construction and evaluation pipeline.
 
-### Translation and Orthographic Revision
+## Translation and Orthographic Revision
 
 - [English-to-Tetun translation prompt](translation_pipeline/prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
 - [Tetun orthographic revision prompt](translation_pipeline/prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and curated vocabulary.
 
-### Evaluation
 
-Evaluation-specific prompts and resources are organized in [`evaluation/`](evaluation/).
-
-- [Multiple-choice question evaluation prompt](evaluation/prompts/multiple-selection-prompt.md): Instructions for selecting the most appropriate answer to a medical multiple-choice question and returning one option label.
-
-Additional [annotation tools and guidelines](annotation-tools-and-guidelines/) are provided in this repository.
-
-## Intended Use and Limitations
+# Intended Use and Limitations
 
 Labadain-MedQA is intended for research on Tetun medical QA, medical information access, cross-lingual knowledge transfer, and the evaluation of language models in low-resource settings.
 
@@ -382,19 +406,20 @@ Users should consider the following limitations:
 
 **These resources are intended for research and are not validated for clinical diagnosis, treatment decisions, or unsupervised patient care.**
 
-## Availability and Licensing
+# Availability and Licensing
 
 The datasets and models are publicly available under the [Labadain account on Hugging Face](https://huggingface.co/labadain). The prompts and supporting reference files are maintained in this GitHub repository.
 
-All the resources are released under the [Creative Commons Attribution-ShareAlike 4.0 International License](LICENSE).
+The contents of this GitHub repository are released under the [Creative Commons Attribution-ShareAlike 4.0 International License](LICENSE). The published datasets and models are subject to their respective licensing terms and any applicable upstream restrictions.
+
 
 The datasets are derived from existing medical resources, and the fine-tuned models depend on third-party base checkpoints. Users should consult the individual dataset and model cards for applicable source attribution, licensing information, and usage restrictions. The repository license does not supersede the terms governing upstream datasets or base models.
 
-## Citation
+# Citation
 
 If you use Labadain-MedQA, please acknowledge the resource and its original data sources. 
 The citation for the associated Labadain-MedQA research paper will be added when its publication details are available.
 
-## Feedback and Contributions
+# Feedback and Contributions
 
 Researchers are welcome to report data errors, translation issues, documentation problems, or other findings through the [GitHub Issues](https://github.com/labadain/labadain-medqa/issues) page.
