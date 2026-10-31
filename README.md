@@ -81,7 +81,7 @@ wikidoc = load_dataset(
 print("Medical Flashcards:", len(flashcards))
 print("WikiDoc Patient Information:", len(wikidoc))
 
-# Display an English–Tetun QA pair from each dataset
+# Display the first record of English–Tetun QA pair from each dataset
 print(flashcards[0])
 print(wikidoc[0])
 ```
@@ -185,9 +185,19 @@ Each USMLE dataset uses the same record structure. The following abbreviated exa
 
 The same fields are provided in the [USMLE Step 1](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-1-English-Tetun), [USMLE Step 2](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-2-English-Tetun), and [USMLE Step 3](https://huggingface.co/datasets/labadain/Labadain-MedQA-USMLE-Step-3-English-Tetun) datasets.
 
-The datasets support accuracy-based evaluation using a multiple-choice prompt that instructs models to select one answer option. The evaluation prompt is available in the [Prompts and Reference Files](#prompts-and-reference-files) section.
-
 These datasets are intended for evaluation rather than model fine-tuning, regardless of the split names used by the Hugging Face dataset viewer.
+
+The reproducible Gemma evaluation workflow is available in [`evaluation/evaluate.ipynb`](evaluation/evaluate.ipynb). It uses the practical Gemma 4 E2B configuration:
+
+```text
+BASE_MODEL = unsloth/gemma-4-E2B-it
+ADAPTER_PATH = models/gemma-4-e2b-it-best
+MAX_SEQ_LENGTH = 2048
+CONFIG = base_4bit
+DATASET_PATH = datasets/usmle-self-assessment-tetun/usmle_step_2_tetun.json
+```
+
+The notebook supports `base_bf16`, `base_4bit`, `qlora_bf16`, and `qlora_4bit` configurations, applies deterministic multiple-choice generation (`do_sample=False`), and reports accuracy and invalid-response rate. Update `CONFIG` and `DATASET_PATH` to evaluate another local model configuration or USMLE split.
 
 See all [Labadain-MedQA datasets](https://huggingface.co/labadain/datasets?search=MedQA).
 
