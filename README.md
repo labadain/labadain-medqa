@@ -36,12 +36,12 @@ Translation quality was evaluated using human reference translations, automatic 
 
 ## Translation Pipeline
 
-The reusable translation pipeline is provided in [`translation/`](translation/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
+The reusable translation pipeline is provided in [`translation_pipeline/`](translation_pipeline/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
 
 ### Translation folder
 
 ```text
-translation/
+translation_pipeline/
 ├── prompts/
 │   ├── en-tdt-translation-prompt.md
 │   └── tetun-revision-prompt.md
@@ -56,7 +56,7 @@ The `src/` directory contains the runtime support modules imported by `translate
 
 ### Setup
 
-Run the following commands from the `translation/` directory:
+Run the following commands from the `translation_pipeline/` directory:
 
 ```bash
 python -m venv .venv
@@ -80,7 +80,7 @@ python translate.py \
   --output-filename translated_docs.json
 ```
 
-The first run downloads the Hugging Face dataset and stores it under `translation/HF_dataset_to_translate/`. Later runs reuse the local dataset copy instead of downloading it again.
+The first run downloads the Hugging Face dataset and stores it under `translation_pipeline/HF_dataset_to_translate/`. Later runs reuse the local dataset copy instead of downloading it again.
 
 The output JSON contains the original English fields and the revised Tetun fields: `input`, `input_tdt`, `output`, and `output_tdt`. The translation and revision steps are completed before a record is written.
 
@@ -215,8 +215,8 @@ The following prompts and supporting reference files document the resource const
 
 ### Translation and Orthographic Revision
 
-- [English-to-Tetun translation prompt](translation/prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
-- [Tetun orthographic revision prompt](translation/prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and curated vocabulary.
+- [English-to-Tetun translation prompt](translation_pipeline/prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
+- [Tetun orthographic revision prompt](translation_pipeline/prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and curated vocabulary.
 
 ### Evaluation
 
