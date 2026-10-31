@@ -256,7 +256,6 @@ The Gemma 4 E2B training notebook uses the following baseline configuration:
 | Learning rate | `2e-5` |
 | Optimizer | `adamw_8bit` |
 | Evaluation and checkpoint interval | Every 250 steps |
-| Best-checkpoint metric | Minimal validation loss |
 
 The training approach follows the official [Unsloth Gemma 4 E2B text fine-tuning notebook](<https://github.com/unslothai/notebooks/blob/main/nb/Gemma4_(E2B)-Text.ipynb>). Batch sizes and gradient accumulation were adjusted for the available GPU memory and model size.
 
