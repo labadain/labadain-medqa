@@ -145,7 +145,7 @@ System A is the human translation, and system B is the LLM-generated translation
 
 The human assessment was conducted using the annotation system shown below.
 
-![Translation quality annotation system](annotation-tools-and-guidelines/translation_quality_assessment.png)
+![Translation quality annotation system](translation_quality_assessment_tool.png)
 
 
 ### Evaluation on Medical QA Datasets
