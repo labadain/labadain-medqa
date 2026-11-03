@@ -416,8 +416,18 @@ The datasets are derived from existing medical resources, and the fine-tuned mod
 
 # Citation
 
-If you use Labadain-MedQA, please acknowledge the resource and its original data sources. 
-The citation for the associated Labadain-MedQA research paper will be added when its publication details are available.
+If you use Labadain-MedQA, please acknowledge the resource and cite it as follows. 
+
+```bibtex
+@misc{jesus-nunes-2026-labadain-medqa-tetun,
+  title = {{Labadain-MedQA: A Tetun Medical QA Dataset for Fine-Tuning and Evaluating Large Language Models}},
+  author = {Gabriel de Jesus and Sérgio Nunes},
+  year = {2026},
+  eprint = {2611.00935},
+  archivePrefix = {arXiv},
+  url = {https://arxiv.org/abs/2611.00935}
+}
+```
 
 # Feedback and Contributions
 
