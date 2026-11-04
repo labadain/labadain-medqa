@@ -1,4 +1,4 @@
-![Labadain-MedQA overview](Labadain-MedQA-Tetun.png)
+![Labadain-MedQA overview](images/Labadain-MedQA-Tetun.png)
 
 # Overview
 
@@ -15,6 +15,8 @@ This repository provides the translation pipeline, evaluation code, prompts, and
 
 # Resource Description
 
+Labadain-MedQA provides datasets, fine-tuned models, evaluation resources, and supporting materials for research on Tetun medical question answering. The resources support model fine-tuning, translation quality assessment, downstream evaluation, and reproducibility. The main components are summarized below.
+
 | Resource | Contents |
 | --- | --- |
 | Training datasets | 39,077 English–Tetun medical QA pairs from two datasets |
@@ -25,6 +27,8 @@ This repository provides the translation pipeline, evaluation code, prompts, and
 
 
 # Datasets
+
+Labadain-MedQA provides parallel English–Tetun medical QA datasets for model fine-tuning and future NLP and AI research. This section describes the datasets, their structure, and how to load them.
 
 ## Medical QA Training Data
 
@@ -88,69 +92,108 @@ print(wikidoc[0])
 
 The Tetun question and answer fields were used to construct instruction–response examples for model fine-tuning. The training format depends on the selected model and its chat template.
 
+# Models
 
-# Evaluation
+Six instruction-tuned models from the Gemma 4 and Llama 3 families were adapted for Tetun medical QA using QLoRA on the translated MedAlpaca training datasets.
 
-*Labadain-MedQA* provides resources for evaluating English-to-Tetun medical translation quality and language model performance on Tetun medical QA tasks. The evaluation resources include human reference translations, translation assessment scores, translated USMLE multiple-choice questions, and an evaluation notebook.
+The published models are **PEFT adapters**, not standalone copies of the base models. Each adapter must be loaded with its compatible base model, as documented in the respective Hugging Face model card.
 
-## Translation Quality Evaluation
+## Gemma 4
 
+| Model | USMLE Macro-Average Accuracy |
+| --- | ---: |
+| [Gemma 4 12B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-12B-it-Tetun) | 48.64% |
+| [Gemma 4 E4B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-E4B-it-Tetun) | 45.95% |
+| [Gemma 4 E2B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-E2B-it-Tetun) | 26.25% |
 
-Translation quality was evaluated on 100 randomly selected medical QA documents (50 question-answer pairs), using human reference translations and assessments by two native Tetun-speaking healthcare professionals.
+## Llama 3
 
-- [Translation Evaluation Sample](https://huggingface.co/datasets/labadain/Labadain-MedQA-Sample-for-Evaluation-English-Tetun): Contains English originals, human reference translations, and LLM-generated translations for 100 medical QA documents.
-- [Human Translation Assessment Scores](https://huggingface.co/datasets/labadain/Labadain-MedQA-Human-Assessment-Scores-English-Tetun): Contains human evaluation scores for medical accuracy and Tetun fluency.
+| Model | USMLE Macro-Average Accuracy |
+| --- | ---: |
+| [Llama 3.1 8B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-LLaMA-3.1-8B-it-Tetun) | 21.75% |
+| [Llama 3.2 3B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-LLaMA-3.2-3B-it-Tetun) | 20.41% |
+| [Llama 3.2 1B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-LLaMA-3.2-1B-it-Tetun) | 17.61% |
 
-Example record from the **Translation Evaluation Sample**:
+The reported results correspond to the QLoRA evaluation configurations documented in the model cards, including the 4-bit inference configuration for the Gemma models. Macro-average accuracy is calculated as the unweighted mean of the accuracies across the three USMLE evaluation sets. Results for alternative precision or adapter-merging configurations may differ.
 
-```json
-{
-  "english_text": "What is the association between mycophenolate mofetil use and blood pressure?",
-  "translation_human": "Saida mak relasaun entre uzu mikofenolatu mofetila no tensaun arteriál (raan)?",
-  "translation_llm": "Saida mak asosiasaun entre uza mikofenolatu mofetil no presaun raan?"
-}
-```
+Each model card provides additional information about its base checkpoint, fine-tuning approach, evaluation results, and model-loading instructions.
 
-Example record from the **Human Translation Assessment Scores** dataset:
+See all [Labadain-MedQA models](https://huggingface.co/labadain/models?search=MedQA).
 
-```json
-{
-  "TQ001": {
-    "english_text": "What is the association between mycophenolate mofetil use and blood pressure?",
-    "translation_a": "Saida mak relasaun entre uzu mikofenolatu mofetila no tensaun arteriál (raan)?",
-    "translation_b": "Saida mak asosiasaun entre uza mikofenolatu mofetil no presaun raan?",
-    "ratings": {
-      "a1_a_medical_accuracy": 4,
-      "a1_a_tetun_fluency": 4,
-      "a1_b_medical_accuracy": 4,
-      "a1_b_tetun_fluency": 4,
-      "a2_a_medical_accuracy": 5,
-      "a2_a_tetun_fluency": 5,
-      "a2_b_medical_accuracy": 5,
-      "a2_b_tetun_fluency": 5
-    }
-  }
-}
-```
+## Model Fine-Tuning
 
-The human-assessment rating fields use the pattern
-`<annotator>_<system>_<criterion>`:
+The adapters were trained using [Unsloth](https://github.com/unslothai/unsloth), Hugging Face PEFT/QLoRA, and the TRL `SFTTrainer` on the translated MedAlpaca datasets. The training pipeline converts the Tetun records into instruction–response pairs, injects LoRA adapters into the target modules, and retains the checkpoint with the lowest validation loss.
 
-| Component | Meaning |
+The Gemma 4 E2B training notebook uses the following baseline configuration:
+
+| Setting | Value |
 | --- | --- |
-| `a1` or `a2` | Annotator 1 or annotator 2 |
-| `a` or `b` | Translation system A or translation system B |
-| `medical_accuracy` | Score for medical accuracy |
-| `tetun_fluency` | Score for Tetun fluency |
+| LoRA rank (`r`) | 16 |
+| LoRA alpha | 16 |
+| LoRA dropout | 0.0 |
+| Trainable modules | Language, attention, and MLP modules |
+| Sequence length | 1,024 tokens |
+| Per-device training batch size | 8 |
+| Gradient accumulation steps | 4 |
+| Effective batch size | 32 |
+| Epochs | 3 |
+| Learning rate | `2e-5` |
+| Optimizer | `adamw_8bit` |
+| Evaluation and checkpoint interval | Every 250 steps |
 
-System A is the human translation, and system B is the LLM-generated translation. For example, `a1_a_medical_accuracy` is annotator 1's medical-accuracy score for the human translation, while `a1_a_tetun_fluency` is annotator 1's Tetun-fluency score for the human translation. Fields with `_b_` refer to the LLM-generated translation; the `a2_` fields contain the corresponding scores from annotator 2.
+The training approach follows the official [Unsloth Gemma 4 E2B text fine-tuning notebook](<https://github.com/unslothai/notebooks/blob/main/nb/Gemma4_(E2B)-Text.ipynb>). Batch sizes and gradient accumulation were adjusted for the available GPU memory and model size.
 
-The human assessment was conducted using the annotation system shown below.
-
-![Translation quality annotation system](translation_quality_assessment_tool.png)
+## Model Evaluation
 
 
-## Evaluation on Medical QA Datasets
+## Model Usage
+
+The following example shows how to load and use the Gemma 4 E2B adapter. The LLaMA 3 adapters use similar settings: 4-bit loading, text-only generation, the same user-prompt format, and deterministic decoding (`do_sample=False`). The model-loading class, base model, and adapter identifiers should be adjusted for each model.
+
+Install the inference dependencies:
+
+```bash
+pip install unsloth peft transformers torch bitsandbytes
+```
+
+```python
+from peft import PeftModel
+from unsloth import FastModel
+import torch
+
+base_model, tokenizer = FastModel.from_pretrained(
+    model_name="unsloth/gemma-4-E2B-it",
+    max_seq_length=2048,
+    load_in_4bit=True,
+)
+
+model = PeftModel.from_pretrained(
+    base_model,
+    "labadain/Labadain-MedQA-QLoRA-Gemma-4-E2B-it-Tetun",
+)
+model.eval()
+
+messages = [{"role": "user", "content": "Saida mak diabetes?"}]
+inputs = tokenizer.apply_chat_template(
+    messages,
+    tokenize=True,
+    add_generation_prompt=True,
+    return_tensors="pt",
+    return_dict=True,
+).to(model.device)
+
+with torch.inference_mode():
+    output = model.generate(
+        **inputs,
+        do_sample=False,
+        max_new_tokens=256,
+    )
+
+new_tokens = output[0, inputs["input_ids"].shape[-1]:]
+print(tokenizer.decode(new_tokens, skip_special_tokens=True))
+```
+
+## Model Evaluation on USMLE
 
 Three English–Tetun USMLE datasets provide 325 multiple-choice questions for evaluating language models on medical knowledge and reasoning tasks in Tetun.
 
@@ -207,118 +250,6 @@ The notebook supports `base_bf16`, `base_4bit`, `qlora_bf16`, and `qlora_4bit` c
 
 See all [Labadain-MedQA datasets](https://huggingface.co/labadain/datasets?search=MedQA).
 
-
-# Models
-
-Six instruction-tuned models from the Gemma 4 and Llama 3 families were adapted for Tetun medical QA using QLoRA on the translated MedAlpaca training datasets.
-
-The published models are **PEFT adapters**, not standalone copies of the base models. Each adapter must be loaded with its compatible base model, as documented in the respective Hugging Face model card.
-
-## Gemma 4
-
-| Model | USMLE Macro-Average Accuracy |
-| --- | ---: |
-| [Gemma 4 12B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-12B-it-Tetun) | 48.64% |
-| [Gemma 4 E4B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-E4B-it-Tetun) | 45.95% |
-| [Gemma 4 E2B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-Gemma-4-E2B-it-Tetun) | 26.25% |
-
-## Llama 3
-
-| Model | USMLE Macro-Average Accuracy |
-| --- | ---: |
-| [Llama 3.1 8B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-LLaMA-3.1-8B-it-Tetun) | 21.75% |
-| [Llama 3.2 3B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-LLaMA-3.2-3B-it-Tetun) | 20.41% |
-| [Llama 3.2 1B QLoRA](https://huggingface.co/labadain/Labadain-MedQA-QLoRA-LLaMA-3.2-1B-it-Tetun) | 17.61% |
-
-The reported results correspond to the QLoRA evaluation configurations documented in the model cards, including the 4-bit inference configuration for the Gemma models. Macro-average accuracy is calculated as the unweighted mean of the accuracies across the three USMLE evaluation sets. Results for alternative precision or adapter-merging configurations may differ.
-
-Each model card provides additional information about its base checkpoint, fine-tuning approach, evaluation results, and model-loading instructions.
-
-See all [Labadain-MedQA models](https://huggingface.co/labadain/models?search=MedQA).
-
-## Model Fine-Tuning
-
-The adapters were trained using [Unsloth](https://github.com/unslothai/unsloth), Hugging Face PEFT/QLoRA, and the TRL `SFTTrainer` on the translated MedAlpaca datasets. The training pipeline converts the Tetun records into instruction–response pairs, injects LoRA adapters into the target modules, and retains the checkpoint with the lowest validation loss.
-
-The Gemma 4 E2B training notebook uses the following baseline configuration:
-
-| Setting | Value |
-| --- | --- |
-| LoRA rank (`r`) | 16 |
-| LoRA alpha | 16 |
-| LoRA dropout | 0.0 |
-| Trainable modules | Language, attention, and MLP modules |
-| Sequence length | 1,024 tokens |
-| Per-device training batch size | 8 |
-| Gradient accumulation steps | 4 |
-| Effective batch size | 32 |
-| Epochs | 3 |
-| Learning rate | `2e-5` |
-| Optimizer | `adamw_8bit` |
-| Evaluation and checkpoint interval | Every 250 steps |
-
-The training approach follows the official [Unsloth Gemma 4 E2B text fine-tuning notebook](<https://github.com/unslothai/notebooks/blob/main/nb/Gemma4_(E2B)-Text.ipynb>). Batch sizes and gradient accumulation were adjusted for the available GPU memory and model size.
-
-## Model Usage
-
-The following example shows how to load and use the Gemma 4 E2B adapter. The LLaMA 3 adapters use similar settings: 4-bit loading, text-only generation, the same user-prompt format, and deterministic decoding (`do_sample=False`). The model-loading class, base model, and adapter identifiers should be adjusted for each model.
-
-Install the inference dependencies:
-
-```bash
-pip install unsloth peft transformers torch bitsandbytes
-```
-
-```python
-from peft import PeftModel
-from unsloth import FastModel
-import torch
-
-base_model, tokenizer = FastModel.from_pretrained(
-    model_name="unsloth/gemma-4-E2B-it",
-    max_seq_length=2048,
-    load_in_4bit=True,
-)
-
-model = PeftModel.from_pretrained(
-    base_model,
-    "labadain/Labadain-MedQA-QLoRA-Gemma-4-E2B-it-Tetun",
-)
-model.eval()
-
-messages = [{"role": "user", "content": "Saida mak diabetes?"}]
-inputs = tokenizer.apply_chat_template(
-    messages,
-    tokenize=True,
-    add_generation_prompt=True,
-    return_tensors="pt",
-    return_dict=True,
-).to(model.device)
-
-with torch.inference_mode():
-    output = model.generate(
-        **inputs,
-        do_sample=False,
-        max_new_tokens=256,
-    )
-
-new_tokens = output[0, inputs["input_ids"].shape[-1]:]
-print(tokenizer.decode(new_tokens, skip_special_tokens=True))
-```
-
-
-# Resource Construction
-
-The medical QA training datasets were derived from the MedAlpaca Medical Flashcards and WikiDoc Patient Information collections. The English source content was translated into Tetun using Gemini 2.5 Flash through a two-stage process:
-
-1. **English-to-Tetun translation:** Medical QA content was translated using a prompt containing English–Tetun examples.
-2. **Tetun orthographic revision:** The translated text was revised using a separate prompt guided by official Instituto Nacional de Linguística (INL) orthography, Portuguese-to-Tetun spelling adaptation rules, and curated vocabulary.
-
-Both prompts were iteratively refined during development. The final prompts and supporting reference files are available in the [Prompts and Reference Files](#prompts-and-reference-files) section.
-
-Translation quality was evaluated using human reference translations, automatic translation metrics, and assessments by two native Tetun-speaking healthcare professionals.
-
-
 # Translation Pipeline
 
 The reusable translation pipeline is provided in [`translation_pipeline/`](translation_pipeline/). It translates English medical QA text into Tetun and then applies a separate Tetun orthographic revision step before saving the output.
@@ -337,7 +268,15 @@ translation_pipeline/
 └── translate.py
 ```
 
+
 The `src/` directory contains the runtime support modules imported by `translate.py`. It must remain alongside `translate.py` when the pipeline is copied or published.
+
+## Prompts
+
+The translation pipeline uses two prompts: one for English-to-Tetun translation and another for orthographic revision of the translated text.
+
+- [English-to-Tetun translation prompt](translation_pipeline/prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
+- [Tetun orthographic revision prompt](translation_pipeline/prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and a list of curated Tetun words.
 
 ## Setup
 
@@ -382,14 +321,61 @@ translated_docs/translated_docs_checkpoint.json
 The checkpoint stores the dataset configuration and the next source index. If a translation request fails, rerun the same command to resume from the recorded index. The existing output JSON supplies the records already completed.
 
 
-# Prompts and Reference Files
+## Translation Quality Evaluation
 
-The following prompts and supporting reference files document the resource construction and evaluation pipeline.
 
-## Translation and Orthographic Revision
+Translation quality was evaluated on 100 randomly selected medical QA documents (50 question-answer pairs), using human reference translations and assessments by two native Tetun-speaking healthcare professionals.
 
-- [English-to-Tetun translation prompt](translation_pipeline/prompts/en-tdt-translation-prompt.md): Instructions for translating English text into Tetun while preserving meaning, structure, formatting, names, and measurements.
-- [Tetun orthographic revision prompt](translation_pipeline/prompts/tetun-revision-prompt.md): Instructions for revising Tetun text according to official Tetun orthography, Portuguese loanword adaptation rules, and curated vocabulary.
+- [Translation Evaluation Sample](https://huggingface.co/datasets/labadain/Labadain-MedQA-Sample-for-Evaluation-English-Tetun): Contains English originals, human reference translations, and LLM-generated translations for 100 medical QA documents.
+- [Human Translation Assessment Scores](https://huggingface.co/datasets/labadain/Labadain-MedQA-Human-Assessment-Scores-English-Tetun): Contains human evaluation scores for medical accuracy and Tetun fluency.
+
+Example record from the **Translation Evaluation Sample**:
+
+```json
+{
+  "english_text": "What is the association between mycophenolate mofetil use and blood pressure?",
+  "translation_human": "Saida mak relasaun entre uzu mikofenolatu mofetila no tensaun arteriál (raan)?",
+  "translation_llm": "Saida mak asosiasaun entre uza mikofenolatu mofetil no presaun raan?"
+}
+```
+
+Example record from the **Human Translation Assessment Scores** dataset:
+
+```json
+{
+  "TQ001": {
+    "english_text": "What is the association between mycophenolate mofetil use and blood pressure?",
+    "translation_a": "Saida mak relasaun entre uzu mikofenolatu mofetila no tensaun arteriál (raan)?",
+    "translation_b": "Saida mak asosiasaun entre uza mikofenolatu mofetil no presaun raan?",
+    "ratings": {
+      "a1_a_medical_accuracy": 4,
+      "a1_a_tetun_fluency": 4,
+      "a1_b_medical_accuracy": 4,
+      "a1_b_tetun_fluency": 4,
+      "a2_a_medical_accuracy": 5,
+      "a2_a_tetun_fluency": 5,
+      "a2_b_medical_accuracy": 5,
+      "a2_b_tetun_fluency": 5
+    }
+  }
+}
+```
+
+The human-assessment rating fields use the pattern
+`<annotator>_<system>_<criterion>`:
+
+| Component | Meaning |
+| --- | --- |
+| `a1` or `a2` | Annotator 1 or annotator 2 |
+| `a` or `b` | Translation system A or translation system B |
+| `medical_accuracy` | Score for medical accuracy |
+| `tetun_fluency` | Score for Tetun fluency |
+
+System A is the human translation, and system B is the LLM-generated translation. For example, `a1_a_medical_accuracy` is annotator 1's medical-accuracy score for the human translation, while `a1_a_tetun_fluency` is annotator 1's Tetun-fluency score for the human translation. Fields with `_b_` refer to the LLM-generated translation; the `a2_` fields contain the corresponding scores from annotator 2.
+
+The human assessment was conducted using the annotation system shown below.
+
+![Translation quality annotation system](images/translation_quality_assessment_tool.png)
 
 
 # Intended Use and Limitations
@@ -425,6 +411,7 @@ If you use Labadain-MedQA, please acknowledge the resource and cite it as follow
   year = {2026},
   eprint = {2611.00935},
   archivePrefix = {arXiv},
+  primaryClass={cs.CL},
   url = {https://arxiv.org/abs/2611.00935}
 }
 ```
