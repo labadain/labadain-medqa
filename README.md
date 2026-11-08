@@ -411,7 +411,7 @@ If you use Labadain-MedQA, please acknowledge the resource and cite it as follow
   year = {2026},
   eprint = {2611.00935},
   archivePrefix = {arXiv},
-  primaryClass={cs.CL},
+  primaryClass = {cs.CL},
   url = {https://arxiv.org/abs/2611.00935}
 }
 ```
